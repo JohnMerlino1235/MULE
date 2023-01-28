@@ -40,4 +40,17 @@ Create a pull request merging your newly created branch into main. Alert the sof
 
 Documentation on pull requests found [here](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/working-with-your-remote-repository-on-github-or-github-enterprise/creating-an-issue-or-pull-request)
 
+# Using Flask
 
+To create our endpoints that our Front-End will call, we will be utilizing the Flask framework. To run Flask locally, do the following:
+
+Change our working directory to the endpoints directory in Mule:
+### `cd ~/Mule/endpoints`
+
+Set an environmental variable, FLASK_APP to the python file that store ours service:
+### `export FLASK_APP=endpoints.py`
+
+Since we directed Flask to a specific python file by setting the environmental variable, we can run the following to start our service:
+### `flask run`
+
+Flask documentation can be found [here](https://flask.palletsprojects.com/en/1.1.x/quickstart/)
