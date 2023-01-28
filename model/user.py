@@ -1,5 +1,5 @@
+from db.model.database_user import DatabaseUserModel
 # User is an object that represents a standard User
-import mappers
 class User:
     def __init__(self, email, password, first_name, last_name):
         self.email = email
@@ -25,10 +25,19 @@ class User:
 
     # upsert_user_to_database upserts user information to the database
     def upsert_user_to_database(self):
-        database_user_model = mappers.user_model_to_database_user_model(self)
-        return None
+        database_user_model = user_model_to_database_user_model(self)
+        database_user_model.upsert_user_to_database()
 
     # fetch_user_from_database retrieves user information from the database
     def fetch_user_from_database(self):
-        database_user_model = mappers.user_model_to_database_user_model(self)
-        return None
+        database_user_model = user_model_to_database_user_model(self)
+        fetched_user = database_user_model.fetch_user_from_database()
+        return fetched_user
+
+# user_model_to_database_user_model is a mapper to convert from a model to a database model
+def user_model_to_database_user_model(user_model):
+    return DatabaseUserModel(user_model.email, user_model.password, user_model.first_name, user_model.last_name)
+
+# database_user_model_to_user_model is a mapper to convert from a database model to model
+def database_user_model_to_user_model(database_user_model):
+    return User(database_user_model.email, database_user_model.password, database_user_model.first_name, database_user_model.last_name)
