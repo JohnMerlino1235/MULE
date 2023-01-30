@@ -2,7 +2,7 @@ from mysql.connector import connect
 
 # DatabaseUserModel is an object that represents a standard User strictly for database operations
 class DatabaseUserModel:
-    def __init__(self, email, password, first_name, last_name):
+    def __init__(self, email, password=None, first_name=None, last_name=None):
         self.email = email
         self.password = password
         self.first_name = first_name
@@ -16,6 +16,15 @@ class DatabaseUserModel:
 
     # upsert_user_to_database upserts user information to the database and adds a new row
     def upsert_user_to_database(self):
+        if not self.password:
+            print("Password was never set")
+            return
+        if not self.first_name:
+            print("First Name was never set")
+            return
+        if not self.last_name:
+            print("Last Name was never set")
+            return
         upsert_user_query = """
             INSERT INTO users
             VALUES (%s, %s, %s, %s)
@@ -24,7 +33,7 @@ class DatabaseUserModel:
         with self.database.cursor() as cursor:
             cursor.execute(upsert_user_query, user_data_to_upsert)
             self.database.commit()
-
+        print("User successfully upserted to database")
         return None
 
     # fetch_user_from_database retrieves user information from the database and returns a new database model with
