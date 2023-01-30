@@ -44,6 +44,10 @@ Documentation on pull requests found [here](https://docs.github.com/en/desktop/c
 
 To create our endpoints that our Front-End will call, we will be utilizing the Flask framework. To run Flask locally, do the following:
 
+From the Mule Project directory, run the following command to run our virtual environment:
+
+### `. venv/bin/activate`
+
 Change our working directory to the endpoints directory in Mule:
 ### `cd ~/Mule/endpoints`
 
