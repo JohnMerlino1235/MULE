@@ -1,6 +1,7 @@
+from db.model.database import Database
+from db.model.database_user import DatabaseUserModel
 from flask import Flask, jsonify
 from flask_cors import CORS
-from db.model.database_user import DatabaseUserModel
 
 app = Flask(__name__)
 CORS(app)
@@ -35,12 +36,40 @@ def register_user(email, password, first_name, last_name):
 
 @app.route('/login_user/<email>', methods=['POST'])
 def login_user(email, password):
+    # to determine if a user has a valid account, we must fetch their username from the database.
     user_database_model = DatabaseUserModel(email, password)
     fetched_user_from_db = user_database_model.fetch_user_from_database()
     if not fetched_user_from_db:
-        print("User not found in database")
-        return
-    print("User logged in with following details ", fetched_user_from_db.email,
-          fetched_user_from_db.password, fetched_user_from_db.first_name, fetched_user_from_db.last_name)
+        print("ERROR:login_user: User not found in database")
+        response = jsonify({'success': False, 'error': 'User not found in database'})
+        return response
+    if password != fetched_user_from_db.password:
+        print("ERROR:login_user: User passwords do not match")
+        response = jsonify({'success': False, 'error': 'User passwords do not match'})
+        return response
 
-    return
+    # since passwords match, we can return user info
+    print("login_user: User logged in with following details ", fetched_user_from_db.email,
+          fetched_user_from_db.password, fetched_user_from_db.first_name, fetched_user_from_db.last_name)
+    reponse = jsonify({'success': True, 'email': fetched_user_from_db.email, 'password': fetched_user_from_db.password,
+                       'first_name': fetched_user_from_db.first_name, 'last_name': fetched_user_from_db.last_name})
+    return reponse
+
+@app.route('/sign_up', methods=['POST'])
+def sign_up(email, password, first_name, last_name):
+    database_connection = Database()
+
+    # to ensure this user does not already have an account, we can do a quick db fetch based on the input email
+    user = database_connection.fetch_user_by_email(email)
+    if user:
+        print("sign_up: User already registered in Database with email: ", email)
+        response = jsonify({'success': False, 'error': 'User already registered in Database with input email'})
+        return response
+
+    # if user is not populated: we can proceed to upsert the user into our database - creating their account and
+    # storing their information
+    database_connection.upsert_user_to_database(email, password, first_name, last_name)
+    print("sign_up: User successfully registered in Database with credentials", email, password, first_name, last_name)
+    response = jsonify({'success': True, 'email': email, 'password': password, 'first_name': first_name, 'last_name': last_name})
+    return response
+
