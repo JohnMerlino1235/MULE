@@ -73,3 +73,50 @@ def sign_up(email, password, first_name, last_name):
     response = jsonify({'success': True, 'email': email, 'password': password, 'first_name': first_name, 'last_name': last_name})
     return response
 
+@app.route('/device_pairing', methods=['POST'])
+def device_pairing():
+    from time import sleep
+    from serial.tools import list_ports
+    #figure out which com port the device is associated with
+    #by checking available com ports before and after device is plugged in.
+    comport_list_pre_plugin = list(list_ports.comports())
+    print("Please plug in device now!")
+    cnt = 0
+    #give the user 30 seconds to plug the device in before exiting
+    while True:
+        #check for a timeout
+        if cnt >= 30:
+            print('Did not detect device...')
+            return jsonify({'success': False, 'error': 'No device detected...'})
+        #check if the available ports have changed
+        comport_list_post_plugin = list(list_ports.comports())
+        if len(comport_list_pre_plugin) < len(comport_list_post_plugin):
+            for c in comport_list_post_plugin:
+                if c not in comport_list_pre_plugin:
+                    comport_name = c.name
+                    break
+            break
+        cnt += 1
+        sleep(1)
+    return jsonify({'success': True, 'comport_name': comport_name})
+
+@app.route('/read_data', methods=['POST'])
+def read_data(com_port):
+    import serial
+    from serial.tools import list_ports
+    #check if com port provided is valid
+    comport_list = list(list_ports.comports())
+    if com_port not in comport_list:
+        return jsonify({'success': False, 'error': 'Comport not available on this PC. Maybe re-pair...'})
+    #read data from com port
+    ser = serial.Serial(port=com_port, baudrate=9600)
+    num_data_points = 0
+    data_list = []
+    while(num_data_points < 100):
+        data = ser.readline()
+        decoded_data = data.decode()
+        data_list.append(decoded_data)
+        num_data_points += 1
+    ser.close()
+    return jsonify({'success': True, 'data': data_list})
+    
