@@ -91,3 +91,74 @@ def read_data(com_port):
     ser.close()
     return jsonify({'success': True, 'data': data_list})
     
+@app.route('/data_filter', methods=['POST'])
+def data_filter(data_list):
+    import math 
+    import numpy as np
+    import scipy 
+    from scipy.signal import butter
+    from scipy.signal import lfilter
+    from scipy.signal import freqz
+    from scipy.signal import find_peaks
+    import matplotlib.pyplot as plt
+
+    emg1, emg2, emg3, accx, accy, accz = [], [], [], [], [], []
+    emg1 = np.array([float (row[0]) for row in data_list])
+    emg2 = np.array([float (row[1]) for row in data_list])
+    emg3 = np.array([float (row[2]) for row in data_list])
+    accx = np.array([float (row[3]) for row in data_list])
+    accy = np.array([float (row[4]) for row in data_list])
+    accz = np.array([float (row[5]) for row in data_list])
+
+    a1 = accx[:10000] #cut accx to 30 seconds
+    a2 = accy[:10000] #Cut accy to 30 seconds
+    a3 = accz[:10000] #cut accz to 30 seconds
+    e1 = emg1[:10000] #cut emg1 to 30 seconds
+    e2 = emg2[:10000] #cut emg2 to 30 seconds
+    e3 = emg3[:10000] #cut emg3 to 10 seconds
+
+    # Write a function to process EMG
+    sampling_rate = 1000 #1000 samples per second (Hz)
+
+    #convert the raw emg signal to mV
+    e1 = (((e1/1034-0.5)*3.3)/1009)*1000 
+    e2 = (((e2/1034-0.5)*3.3)/1009)*1000
+    e3 = (((e3/1024-0.5)*3.3)/1009)*1000 
+    time = np.arange(0.001, 10.001, 0.001) #for plotting with time
+
+    # bandpass butterworth filter (20-350Hz), rectified signal for emg
+    Band = np.dot((2/1000),[20, 350]) #bandpass - low end: 20 mV, high end: 350 mV (to eliminate Gaussian noise)
+    B, A = scipy.signal.butter(2, Band, 'Bandpass') #second order butterworth bandpass filter
+    emg1_filt = scipy.signal.filtfilt(B, A, e1)
+    emg2_filt = scipy.signal.filtfilt(B, A, e2)
+    emg3_filt = scipy.signal.filtfilt(B, A, e3)
+
+    #Butterworth filter for ACC data
+    Fn = sampling_rate / 2
+    passband = np.array([5.0, 20])/Fn
+    stopband = np.array([0.1, 40])/Fn 
+    passripple = 1
+    stopripple = 10
+
+    C, D = scipy.signal.buttord(passband, stopband, passripple, stopripple, analog=False,fs=None)
+    acc1_filt = scipy.signal.filtfilt(D, C, a1)
+    acc2_filt = scipy.signal.filtfilt(D, C, a2)
+    acc3_filt = scipy.signal.filtfilt(D, C, a3)
+
+    filtered_data = np.column_stack((acc1_filt, emg1_filt, emg2_filt, emg3_filt))
+
+    emg1_mean = abs(np.mean(emg1_filt))
+    emg2_mean = abs(np.mean(emg2_filt))
+    emg3_mean = abs(np.mean(emg3_filt))
+
+
+    acc_mean = abs(np.mean(acc1_filt, acc2_filt, acc3_filt))
+
+    Y4 = np.fft.fft(acc_mean)
+    PD = np.abs(Y4/10000)
+    P4 = PD[:int(10000/2+1)]
+    P4 = 2*P4
+
+    mean_data = np.column_stack((emg1_mean, emg2_mean, emg3_mean, P4))
+
+    return jsonify({'success': True, 'data_list': mean_data})
