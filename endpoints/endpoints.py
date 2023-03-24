@@ -110,12 +110,12 @@ def data_filter(data_list):
     accy = np.array([float (row[4]) for row in data_list])
     accz = np.array([float (row[5]) for row in data_list])
 
-    a1 = accx[:10000] #cut accx to 30 seconds
-    a2 = accy[:10000] #Cut accy to 30 seconds
-    a3 = accz[:10000] #cut accz to 30 seconds
-    e1 = emg1[:10000] #cut emg1 to 30 seconds
-    e2 = emg2[:10000] #cut emg2 to 30 seconds
-    e3 = emg3[:10000] #cut emg3 to 10 seconds
+    a1 = accx[:30000] #cut accx to 30 seconds
+    a2 = accy[:30000] #Cut accy to 30 seconds
+    a3 = accz[:30000] #cut accz to 30 seconds
+    e1 = emg1[:30000] #cut emg1 to 30 seconds
+    e2 = emg2[:30000] #cut emg2 to 30 seconds
+    e3 = emg3[:30000] #cut emg3 to 30 seconds
 
     # Write a function to process EMG
     sampling_rate = 1000 #1000 samples per second (Hz)
@@ -155,8 +155,8 @@ def data_filter(data_list):
     acc_mean = abs(np.mean(acc1_filt, acc2_filt, acc3_filt))
 
     Y4 = np.fft.fft(acc_mean)
-    PD = np.abs(Y4/10000)
-    P4 = PD[:int(10000/2+1)]
+    PD = np.abs(Y4/30000)
+    P4 = PD[:int(30000/2+1)]
     P4 = 2*P4
 
     mean_data = np.column_stack((emg1_mean, emg2_mean, emg3_mean, P4))
