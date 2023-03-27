@@ -104,24 +104,24 @@ def data_filter(data_list):
     accy = np.array([float (row[4]) for row in data_list])
     accz = np.array([float (row[5]) for row in data_list])
 
-    a1 = accx[:30000] #cut accx to 30 seconds
-    a2 = accy[:30000] #Cut accy to 30 seconds
-    a3 = accz[:30000] #cut accz to 30 seconds
-    e1 = emg1[:30000] #cut emg1 to 30 seconds
-    e2 = emg2[:30000] #cut emg2 to 30 seconds
-    e3 = emg3[:30000] #cut emg3 to 30 seconds
+    a1 = accx[:3000] #cut accx to 30 seconds
+    a2 = accy[:3000] #Cut accy to 30 seconds
+    a3 = accz[:3000] #cut accz to 30 seconds
+    e1 = emg1[:3000] #cut emg1 to 30 seconds
+    e2 = emg2[:3000] #cut emg2 to 30 seconds
+    e3 = emg3[:3000] #cut emg3 to 30 seconds
 
     # Write a function to process EMG
     sampling_rate = 1000 #1000 samples per second (Hz)
 
     #convert the raw emg signal to mV
-    e1 = (((e1/1034-0.5)*3.3)/1009)*1000 
-    e2 = (((e2/1034-0.5)*3.3)/1009)*1000
-    e3 = (((e3/1024-0.5)*3.3)/1009)*1000 
+    e1 = (((e1/1034-0.5)*3.3)/1009)*100 
+    e2 = (((e2/1034-0.5)*3.3)/1009)*100
+    e3 = (((e3/1024-0.5)*3.3)/1009)*100 
     time = np.arange(0.001, 10.001, 0.001) #for plotting with time
 
     # bandpass butterworth filter (20-350Hz), rectified signal for emg
-    Band = np.dot((2/1000),[20, 350]) #bandpass - low end: 20 mV, high end: 350 mV (to eliminate Gaussian noise)
+    Band = np.dot((2/100),[20, 350]) #bandpass - low end: 20 mV, high end: 350 mV (to eliminate Gaussian noise)
     B, A = scipy.signal.butter(2, Band, 'Bandpass') #second order butterworth bandpass filter
     emg1_filt = scipy.signal.filtfilt(B, A, e1)
     emg2_filt = scipy.signal.filtfilt(B, A, e2)
@@ -149,8 +149,8 @@ def data_filter(data_list):
     acc_mean = abs(np.mean(acc1_filt, acc2_filt, acc3_filt))
 
     Y4 = np.fft.fft(acc_mean)
-    PD = np.abs(Y4/30000)
-    P4 = PD[:int(30000/2+1)]
+    PD = np.abs(Y4/3000)
+    P4 = PD[:int(3000/2+1)]
     P4 = 2*P4
 
     mean_data = np.column_stack((emg1_mean, emg2_mean, emg3_mean, P4))
