@@ -95,6 +95,7 @@ def data_filter(data_list):
     from scipy.signal import freqz
     from scipy.signal import find_peaks
     import matplotlib.pyplot as plt
+    import pandas as pd
 
     emg1, emg2, emg3, accx, accy, accz = [], [], [], [], [], []
     emg1 = np.array([float (row[0]) for row in data_list])
@@ -153,6 +154,8 @@ def data_filter(data_list):
     P4 = PD[:int(3000/2+1)]
     P4 = 2*P4
 
-    mean_data = np.column_stack((emg1_mean, emg2_mean, emg3_mean, P4))
+    #mean_data = np.column_stack((emg1_mean, emg2_mean, emg3_mean, P4))
+    list = [[emg1_mean, emg2_mean, emg3_mean, P4]]
+    df = pd.DataFrame(list, columns=['EMG 1', 'EMG 2', 'EMG 3', 'ACC'], dtype= float)
 
-    return jsonify({'success': True, 'data_list': mean_data})
+    return jsonify({'success': True, 'data_list': df})
