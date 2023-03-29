@@ -1,4 +1,4 @@
-from db.model.database_user import DatabaseUserModel
+from database.database_user import DatabaseUserModel
 from model.user import User
 # user_model_to_database_user_model is a mapper to convert from a model to a database model
 def user_model_to_database_user_model(user_model):

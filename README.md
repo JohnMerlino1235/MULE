@@ -54,6 +54,10 @@ Change our working directory to the endpoints directory in Mule:
 Set an environmental variable, FLASK_APP to the python file that store ours service:
 ### `export FLASK_APP=endpoints.py`
 
+You may need to set the environmental var PYTHON PATH:
+### `export PYTHONPATH=$PYTHONPATH:/Users/johnmerlino/Documents/Mule/`
+`
+
 Since we directed Flask to a specific python file by setting the environmental variable, we can run the following to start our service:
 ### `flask run`
 
