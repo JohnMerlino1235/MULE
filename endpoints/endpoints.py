@@ -129,13 +129,14 @@ def data_filter(data_list):
     from scipy.signal import butter
     import pandas as pd
 
+    arr = np.array(data_list, dtype=object)
     emg1, emg2, emg3, accx, accy, accz = [], [], [], [], [], []
-    emg1 = np.array([float (row[0]) for row in data_list])
-    emg2 = np.array([float (row[1]) for row in data_list])
-    emg3 = np.array([float (row[2]) for row in data_list])
-    accx = np.array([float (row[3]) for row in data_list])
-    accy = np.array([float (row[4]) for row in data_list])
-    accz = np.array([float (row[5]) for row in data_list])
+    emg1 = np.array([float (row[0]) for row in arr])
+    emg2 = np.array([float (row[1]) for row in arr])
+    emg3 = np.array([float (row[2]) for row in arr])
+    accx = np.array([float (row[3]) for row in arr])
+    accy = np.array([float (row[4]) for row in arr])
+    accz = np.array([float (row[5]) for row in arr])
 
     a1 = accx[:3000] #cut accx to 30 seconds
     a2 = accy[:3000] #Cut accy to 30 seconds
@@ -154,7 +155,7 @@ def data_filter(data_list):
     time = np.arange(0.001, 10.001, 0.001) #for plotting with time
 
     # bandpass butterworth filter (20-350Hz), rectified signal for emg
-    Band = np.dot((2/100),[20, 350]) #bandpass - low end: 20 mV, high end: 350 mV (to eliminate Gaussian noise)
+    Band = np.dot((2/1000),[20, 350]) #bandpass - low end: 20 mV, high end: 350 mV (to eliminate Gaussian noise)
     B, A = scipy.signal.butter(2, Band, 'Bandpass') #second order butterworth bandpass filter
     emg1_filt = scipy.signal.filtfilt(B, A, e1)
     emg2_filt = scipy.signal.filtfilt(B, A, e2)
@@ -186,7 +187,7 @@ def data_filter(data_list):
     P4 = PD[:int(3000/2+1)]
     P4 = 2*P4
     
-    #mean_data = np.column_stack((emg1_mean, emg2_mean, emg3_mean, P4))
+    #mean_data = [emg1_mean, emg2_mean, emg3_mean, P4]
     list = [[emg1_mean, emg2_mean, emg3_mean, P4]]
     df = pd.DataFrame(list, columns=['EMG 1', 'EMG 2', 'EMG 3', 'ACC'], dtype= float)
     
