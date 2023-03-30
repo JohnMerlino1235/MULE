@@ -123,11 +123,13 @@ def read_data():
     return jsonify({'success': True, 'data': data_list})
     
 @app.route('/data_filter', methods=['GET', 'POST'])
-def data_filter(data_list):
+def data_filter():
     import numpy as np
     import scipy 
     from scipy.signal import butter
     import pandas as pd
+    data_list = request.json.get('data_list')
+    data_list = data_list[100:]
 
     arr = np.array(data_list, dtype=object)
     emg1, emg2, emg3, accx, accy, accz = [], [], [], [], [], []
@@ -169,26 +171,30 @@ def data_filter(data_list):
     stopripple = 10
 
     C, D = scipy.signal.buttord(passband, stopband, passripple, stopripple, analog=False,fs=None)
-    acc1_filt = scipy.signal.filtfilt(D, C, a1)
-    acc2_filt = scipy.signal.filtfilt(D, C, a2)
-    acc3_filt = scipy.signal.filtfilt(D, C, a3)
+    acc1_filt = abs(scipy.signal.filtfilt(D, C, a1))
+    acc2_filt = abs(scipy.signal.filtfilt(D, C, a2))
+    acc3_filt = abs(scipy.signal.filtfilt(D, C, a3))
 
     filtered_data = np.column_stack((acc1_filt, emg1_filt, emg2_filt, emg3_filt))
 
     emg1_mean = abs(np.mean(emg1_filt))
     emg2_mean = abs(np.mean(emg2_filt))
     emg3_mean = abs(np.mean(emg3_filt))
+    acc1_mean = abs(np.mean(acc1_filt))
+    acc2_mean = abs(np.mean(acc2_filt))
+    acc3_mean = abs(np.mean(acc3_filt))
 
 
-    acc_mean = abs(np.mean(acc1_filt, acc2_filt, acc3_filt))
-
+    acc_mean = (acc1_mean + acc2_mean + acc3_mean)/3
+    '''
     Y4 = np.fft.fft(acc_mean)
     PD = np.abs(Y4/3000)
     P4 = PD[:int(3000/2+1)]
     P4 = 2*P4
+    '''
     
-    #mean_data = [emg1_mean, emg2_mean, emg3_mean, P4]
-    list = [[emg1_mean, emg2_mean, emg3_mean, P4]]
-    df = pd.DataFrame(list, columns=['EMG 1', 'EMG 2', 'EMG 3', 'ACC'], dtype= float)
+    mean_data = [emg1_mean, emg2_mean, emg3_mean, acc_mean]
+    #list = [[emg1_mean, emg2_mean, emg3_mean, P4]]
+    #df = pd.DataFrame(list, columns=['EMG 1', 'EMG 2', 'EMG 3', 'ACC'], dtype= float)
     
-    return jsonify({'success': True, 'data_list': df})
+    return jsonify({'success': True, 'data_list': mean_data})
