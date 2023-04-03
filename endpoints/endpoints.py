@@ -1,7 +1,7 @@
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, jsonify, request
-from database import User, db
+from database import User, Data, db
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}}, allow_headers=["content-type"])
@@ -11,6 +11,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.database'
 db.init_app(app)
 with app.app_context():
     db.create_all()
+
 @app.after_request
 def after_request(response):
     response.headers.add('Access-Control-Allow-Origin', '*')
@@ -18,6 +19,7 @@ def after_request(response):
     response.headers.add("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT")
     response.headers.add("Access-Control-Allow-Headers", "Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers")
     return response
+
 @app.route('/login', methods=['POST'])
 def login():
     email = request.json.get('email')
@@ -128,6 +130,7 @@ def data_filter():
     import scipy 
     from scipy.signal import butter
     import pandas as pd
+    email = request.json.get('email')
     data_list = request.json.get('data_list')
     data_list = data_list[100:]
 
@@ -196,5 +199,26 @@ def data_filter():
     mean_data = [emg1_mean, emg2_mean, emg3_mean, acc_mean]
     #list = [[emg1_mean, emg2_mean, emg3_mean, P4]]
     #df = pd.DataFrame(list, columns=['EMG 1', 'EMG 2', 'EMG 3', 'ACC'], dtype= float)
+
+    new_data = Data(email=email, data=mean_data, time_recorded = datetime.utcnow())
+    db.session.add(new_data)
+    db.session.commit()
     
     return jsonify({'success': True, 'data_list': mean_data})
+
+@app.route('/get_data', methods=['GET', 'POST'])
+def get_data():
+    email = request.json.get('email')
+    found_user_data = Data.query.filter_by(email=email).order_by(desc(Data.time_recorded)).all()
+
+    if not found_user_data:
+        print(f'ERROR:get_data: {email} has no data stored in database')
+        return jsonify({'success': False, 'message': "No data found for user"})
+
+    data_list = [d.__dict__ for d in found_user_data]
+
+    print(f'SUCCESS:get_data: Data found for {email}')
+
+    return jsonify({'success': True, 'user_data': data_list})
+
+
