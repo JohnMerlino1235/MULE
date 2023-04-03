@@ -204,7 +204,7 @@ def data_filter():
     new_data = Data(email=email,
                     emg_1=emg1_mean,
                     emg_2=emg2_mean,
-                    emg3=emg3_mean,
+                    emg_3=emg3_mean,
                     acc=acc_mean, time_recorded=datetime.utcnow())
     db.session.add(new_data)
     db.session.commit()
@@ -215,7 +215,6 @@ def data_filter():
 def get_data():
     email = request.json.get('email')
     found_user_data = Data.query.filter_by(email=email).order_by(Data.time_recorded).all()
-
     if not found_user_data:
         print(f'ERROR:get_data: {email} has no data stored in database')
         return jsonify({'success': False, 'message': "No data found for user"})
