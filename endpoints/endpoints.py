@@ -129,6 +129,7 @@ def data_filter():
     import numpy as np
     import scipy 
     from scipy.signal import butter
+    from datetime import datetime
     import pandas as pd
     email = request.json.get('email')
     data_list = request.json.get('data_list')
@@ -200,7 +201,11 @@ def data_filter():
     #list = [[emg1_mean, emg2_mean, emg3_mean, P4]]
     #df = pd.DataFrame(list, columns=['EMG 1', 'EMG 2', 'EMG 3', 'ACC'], dtype= float)
 
-    new_data = Data(email=email, data=mean_data, time_recorded = datetime.utcnow())
+    new_data = Data(email=email,
+                    emg_1=emg1_mean,
+                    emg_2=emg2_mean,
+                    emg3=emg3_mean,
+                    acc=acc_mean, time_recorded=datetime.utcnow())
     db.session.add(new_data)
     db.session.commit()
     
