@@ -209,7 +209,7 @@ def data_filter():
 @app.route('/get_data', methods=['GET', 'POST'])
 def get_data():
     email = request.json.get('email')
-    found_user_data = Data.query.filter_by(email=email).order_by(desc(Data.time_recorded)).all()
+    found_user_data = Data.query.filter_by(email=email).order_by(Data.time_recorded).all()
 
     if not found_user_data:
         print(f'ERROR:get_data: {email} has no data stored in database')
