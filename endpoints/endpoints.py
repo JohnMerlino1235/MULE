@@ -1,6 +1,6 @@
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, make_response, send_file
 from database import User, Data, db
 
 app = Flask(__name__)
@@ -224,5 +224,14 @@ def get_data():
     print(f'SUCCESS:get_data: Data found for {email}')
 
     return jsonify({'success': True, 'user_data': data_list})
+
+@app.route('/get_image', methods=['GET','POST'])
+def get_image():
+    image_path = '/Users/johnmerlino/Documents/Mule/endpoints/testMonkey.png'
+    return send_file(image_path, mimetype='image/png')
+
+    #send image here
+
+
 
 
