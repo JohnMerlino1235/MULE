@@ -226,12 +226,15 @@ def get_data():
 
     print(f'SUCCESS:get_data: Data found for {email}')
 
-    arr = np.array(data_list)
-    emg1 = np.array([float (row[0]) for row in arr])
-    emg2 = np.array([float (row[1]) for row in arr])
-    emg3 = np.array([float (row[2]) for row in arr])
-    acc = np.array([float (row[3]) for row in arr])
-    time = [1,2,3,4,5,6,7,8,9]
+    emg1 = np.array()
+    emg2 = np.array()
+    emg3 = np.array()
+    time = []
+    for entry in found_user_data:
+        np.append(emg1, entry.emg_1)
+        np.append(emg2, entry.emg_2)
+        np.append(emg3, entry.emg_3)
+        time.append(entry.time_recorded)
 
     plt.figure()
     plt.subplot(3,1,1)
