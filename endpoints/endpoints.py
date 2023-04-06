@@ -213,6 +213,9 @@ def data_filter():
 
 @app.route('/get_data', methods=['GET', 'POST'])
 def get_data():
+    import numpy as np
+    import matplotlib.pyplot as plt
+
     email = request.json.get('email')
     found_user_data = Data.query.filter_by(email=email).order_by(Data.time_recorded).all()
     if not found_user_data:
@@ -222,6 +225,40 @@ def get_data():
     data_list = [d.__dict__ for d in found_user_data]
 
     print(f'SUCCESS:get_data: Data found for {email}')
+
+    arr = np.array(data_list)
+    emg1 = np.array([float (row[0]) for row in arr])
+    emg2 = np.array([float (row[1]) for row in arr])
+    emg3 = np.array([float (row[2]) for row in arr])
+    acc = np.array([float (row[3]) for row in arr])
+    time = [1,2,3,4,5,6,7,8,9]
+
+    plt.figure()
+    plt.subplot(3,1,1)
+    plt.plot(time,emg1)
+    plt.title('Quadraceps')
+    #plt.xlabel('Exercise count')
+    plt.ylabel('Muscle Activation')
+    plt.ylim(0.00, 0.10)
+    plt.xlim(1,9)
+
+    plt.subplot(3,1,2)
+    plt.plot(time,emg2)
+    plt.title('Vastus Lateralis')
+    #plt.xlabel('Exercise count')
+    plt.ylabel('Muscle Activation')
+    plt.ylim(0.00,0.10)
+    plt.xlim(1,9)
+
+    plt.subplot(3,1,3)
+    plt.plot(time,emg3)
+    plt.title('Soleus')
+    plt.xlabel('Exercise count')
+    plt.ylabel('Muscle Activation')
+    plt.ylim(0.00, 0.10)
+    plt.xlim(1,9)
+
+    plt.show()
 
     return jsonify({'success': True, 'user_data': data_list})
 
