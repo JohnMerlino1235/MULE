@@ -1,8 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-
-db = SQLAlchemy()
-
+from database import db
 class Data(db.Model):
     __tablename__ = 'data'
 
