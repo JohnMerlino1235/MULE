@@ -89,13 +89,11 @@ def device_pairing():
     #figure out which com port the device is associated with
     #by checking available com ports before and after device is plugged in.
     comport_list_pre_plugin = list(list_ports.comports())
-    print("Please plug in device now!")
     cnt = 0
     #give the user 30 seconds to plug the device in before exiting
     while True:
         #check for a timeout
         if cnt >= 30:
-            print('Did not detect device...')
             return jsonify({'success': False, 'error': 'No device detected...'})
         #check if the available ports have changed
         comport_list_post_plugin = list(list_ports.comports())
@@ -119,9 +117,12 @@ def read_data():
     #check if com port provided is valid
     comport_list = [c.name for c in list_ports.comports()]
     if com_port not in comport_list:
+        print("READ_DATA::ERROR::Comport not found")
         return jsonify({'success': False, 'error': 'Comport not available on this PC. Maybe re-pair...'})
     with serial.Serial(port=com_port, baudrate=9600) as ser:
         data_list = list(itertools.islice(map(lambda x: x.decode().split(), ser), 3000))
+    
+    print("Data read successfully, data_list with size of ", len(data_list))
     return jsonify({'success': True, 'data': data_list})
     
 @app.route('/data_filter', methods=['GET', 'POST'])
@@ -130,35 +131,34 @@ def data_filter():
     import scipy 
     from scipy.signal import butter
     from datetime import datetime
-    import pandas as pd
     email = request.json.get('email')
     data_list = request.json.get('data_list')
-    data_list = data_list[100:]
+    data_list = data_list[100:2900]
 
     arr = np.array(data_list, dtype=object)
-    emg1, emg2, emg3, accx, accy, accz = [], [], [], [], [], []
-    emg1 = np.array([float (row[0]) for row in arr])
-    emg2 = np.array([float (row[1]) for row in arr])
-    emg3 = np.array([float (row[2]) for row in arr])
-    accx = np.array([float (row[3]) for row in arr])
-    accy = np.array([float (row[4]) for row in arr])
-    accz = np.array([float (row[5]) for row in arr])
+    emg1, emg2, emg3 = [], [], []
+    for row in arr:
+        try:
+            emg1_val = float(row[0])
+            emg2_val = float(row[1])
+            emg3_val = float(row[2])
+            emg1.append(emg1_val)
+            emg2.append(emg2_val)
+            emg3.append(emg3_val)
+        except:
+            continue
+    emg1 = np.array(emg1)
+    emg2 = np.array(emg2)
+    emg3 = np.array(emg3)
 
-    a1 = accx[:3000] #cut accx to 30 seconds
-    a2 = accy[:3000] #Cut accy to 30 seconds
-    a3 = accz[:3000] #cut accz to 30 seconds
     e1 = emg1[:3000] #cut emg1 to 30 seconds
     e2 = emg2[:3000] #cut emg2 to 30 seconds
     e3 = emg3[:3000] #cut emg3 to 30 seconds
-
-    # Write a function to process EMG
-    sampling_rate = 1000 #1000 samples per second (Hz)
 
     #convert the raw emg signal to mV
     e1 = (((e1/1034-0.5)*3.3)/1009)*100 
     e2 = (((e2/1034-0.5)*3.3)/1009)*100
     e3 = (((e3/1024-0.5)*3.3)/1009)*100 
-    time = np.arange(0.001, 10.001, 0.001) #for plotting with time
 
     # bandpass butterworth filter (20-350Hz), rectified signal for emg
     Band = np.dot((2/1000),[20, 350]) #bandpass - low end: 20 mV, high end: 350 mV (to eliminate Gaussian noise)
@@ -167,45 +167,17 @@ def data_filter():
     emg2_filt = scipy.signal.filtfilt(B, A, e2)
     emg3_filt = scipy.signal.filtfilt(B, A, e3)
 
-    #Butterworth filter for ACC data
-    Fn = sampling_rate / 2
-    passband = np.array([5.0, 20])/Fn
-    stopband = np.array([0.1, 40])/Fn 
-    passripple = 1
-    stopripple = 10
-
-    C, D = scipy.signal.buttord(passband, stopband, passripple, stopripple, analog=False,fs=None)
-    acc1_filt = abs(scipy.signal.filtfilt(D, C, a1))
-    acc2_filt = abs(scipy.signal.filtfilt(D, C, a2))
-    acc3_filt = abs(scipy.signal.filtfilt(D, C, a3))
-
-    filtered_data = np.column_stack((acc1_filt, emg1_filt, emg2_filt, emg3_filt))
-
     emg1_mean = abs(np.mean(emg1_filt))
     emg2_mean = abs(np.mean(emg2_filt))
     emg3_mean = abs(np.mean(emg3_filt))
-    acc1_mean = abs(np.mean(acc1_filt))
-    acc2_mean = abs(np.mean(acc2_filt))
-    acc3_mean = abs(np.mean(acc3_filt))
-
-
-    acc_mean = (acc1_mean + acc2_mean + acc3_mean)/3
-    '''
-    Y4 = np.fft.fft(acc_mean)
-    PD = np.abs(Y4/3000)
-    P4 = PD[:int(3000/2+1)]
-    P4 = 2*P4
-    '''
     
-    mean_data = [emg1_mean, emg2_mean, emg3_mean, acc_mean]
-    #list = [[emg1_mean, emg2_mean, emg3_mean, P4]]
-    #df = pd.DataFrame(list, columns=['EMG 1', 'EMG 2', 'EMG 3', 'ACC'], dtype= float)
-
+    mean_data = [emg1_mean, emg2_mean, emg3_mean]
+    print('user email', email)
     new_data = Data(email=email,
                     emg_1=emg1_mean,
                     emg_2=emg2_mean,
                     emg_3=emg3_mean,
-                    acc=acc_mean, time_recorded=datetime.utcnow())
+                    time_recorded=datetime.utcnow())
     db.session.add(new_data)
     db.session.commit()
     
@@ -226,44 +198,29 @@ def get_data():
 
     print(f'SUCCESS:get_data: Data found for {email}')
 
-    arr = np.array(data_list)
-    emg1 = np.array([float (row[0]) for row in arr])
-    emg2 = np.array([float (row[1]) for row in arr])
-    emg3 = np.array([float (row[2]) for row in arr])
-    acc = np.array([float (row[3]) for row in arr])
-    time = [1,2,3,4,5,6,7,8,9]
+    emg1, emg2, emg3, time = [], [], [], []
+    for entry in found_user_data[len(found_user_data)-5:]:
+        emg1.append(entry.emg_1)
+        emg2.append(entry.emg_2)
+        emg3.append(entry.emg_3)
+        time.append(entry.time_recorded.strftime('%m-%d %H:%M'))
+    print(emg1, emg2, emg3, time)
+    np.array(emg1)
+    np.array(emg2)
+    np.array(emg3)
 
-    plt.figure()
-    plt.subplot(3,1,1)
-    plt.plot(time,emg1)
-    plt.title('Quadraceps')
-    #plt.xlabel('Exercise count')
+    plt.plot(time,emg1,label='Quadriceps')
+    plt.plot(time,emg2,label='Vastus Lateralis')
+    plt.plot(time,emg3,label='Soleus')
+    plt.xlabel('Exercise Date')
     plt.ylabel('Muscle Activation')
-    plt.ylim(0.00, 0.10)
-    plt.xlim(1,9)
-
-    plt.subplot(3,1,2)
-    plt.plot(time,emg2)
-    plt.title('Vastus Lateralis')
-    #plt.xlabel('Exercise count')
-    plt.ylabel('Muscle Activation')
-    plt.ylim(0.00,0.10)
-    plt.xlim(1,9)
-
-    plt.subplot(3,1,3)
-    plt.plot(time,emg3)
-    plt.title('Soleus')
-    plt.xlabel('Exercise count')
-    plt.ylabel('Muscle Activation')
-    plt.ylim(0.00, 0.10)
-    plt.xlim(1,9)
 
     filename = email + ".png"
     plt.savefig(filename)
 
     # plt.show()
 
-    return jsonify({'success': True, 'user_data': data_list})
+    return jsonify({'success': True)
 
 @app.route('/get_image', methods=['GET','POST'])
 def get_image():
@@ -272,4 +229,4 @@ def get_image():
     image_path = f'/Users/johnmerlino/Documents/Mule/endpoints/{email}.png'
     return send_file(image_path, mimetype='image/png')
 
-
+    return jsonify({'success': True})
