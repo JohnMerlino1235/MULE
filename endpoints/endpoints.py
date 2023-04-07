@@ -221,11 +221,10 @@ def get_data():
 
     return jsonify({'success': True})
 
-@app.route('/get_image', methods=['GET','POST'])
-def get_image():
+@app.route('/get_image/<email>', methods=['GET','POST'])
+def get_image(email):
     import os
     # the results should always be saved in the endpoints file as their email.png
-    email = request.json.get('email')
     image_path = email + '.png'
     file_path = os.path.join(app.root_path, image_path)  # Relative file path based on Flask app directory
     print('getting here with file path', file_path)
