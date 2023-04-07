@@ -1,6 +1,6 @@
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_file
 from database import User, Data, db
 
 app = Flask(__name__)
@@ -261,5 +261,12 @@ def get_data():
     plt.show()
 
     return jsonify({'success': True, 'user_data': data_list})
+
+@app.route('/get_image', methods=['GET','POST'])
+def get_image():
+    # the email should always be saved in the endpoints file as their email.png
+    email = request.json.get('email')
+    image_path = f'/Users/johnmerlino/Documents/Mule/endpoints/{email}.png'
+    return send_file(image_path, mimetype='image/png')
 
 
