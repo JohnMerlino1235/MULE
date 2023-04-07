@@ -186,6 +186,8 @@ def data_filter():
 @app.route('/get_data', methods=['GET', 'POST'])
 def get_data():
     import numpy as np
+    import matplotlib
+    matplotlib.use('Agg')  # Set the backend to Agg
     import matplotlib.pyplot as plt
 
     email = request.json.get('email')
@@ -193,8 +195,6 @@ def get_data():
     if not found_user_data:
         print(f'ERROR:get_data: {email} has no data stored in database')
         return jsonify({'success': False, 'message': "No data found for user"})
-
-    data_list = [d.__dict__ for d in found_user_data]
 
     print(f'SUCCESS:get_data: Data found for {email}')
 
@@ -214,19 +214,19 @@ def get_data():
     plt.plot(time,emg3,label='Soleus')
     plt.xlabel('Exercise Date')
     plt.ylabel('Muscle Activation')
+    plt.legend()
 
     filename = email + ".png"
     plt.savefig(filename)
 
-    # plt.show()
-
-    return jsonify({'success': True)
+    return jsonify({'success': True})
 
 @app.route('/get_image', methods=['GET','POST'])
 def get_image():
-    # the email should always be saved in the endpoints file as their email.png
+    import os
+    # the results should always be saved in the endpoints file as their email.png
     email = request.json.get('email')
-    image_path = f'/Users/johnmerlino/Documents/Mule/endpoints/{email}.png'
-    return send_file(image_path, mimetype='image/png')
-
-    return jsonify({'success': True})
+    image_path = email + '.png'
+    file_path = os.path.join(app.root_path, image_path)  # Relative file path based on Flask app directory
+    print('getting here with file path', file_path)
+    return send_file(file_path, mimetype='image/png')
