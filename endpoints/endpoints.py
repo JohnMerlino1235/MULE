@@ -258,7 +258,10 @@ def get_data():
     plt.ylim(0.00, 0.10)
     plt.xlim(1,9)
 
-    plt.show()
+    filename = email + ".png"
+    plt.savefig(filename)
+
+    # plt.show()
 
     return jsonify({'success': True, 'user_data': data_list})
 
