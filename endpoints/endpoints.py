@@ -1,5 +1,4 @@
 from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, jsonify, request
 from database import User, Data, db
 
@@ -89,13 +88,11 @@ def device_pairing():
     #figure out which com port the device is associated with
     #by checking available com ports before and after device is plugged in.
     comport_list_pre_plugin = list(list_ports.comports())
-    print("Please plug in device now!")
     cnt = 0
     #give the user 30 seconds to plug the device in before exiting
     while True:
         #check for a timeout
         if cnt >= 30:
-            print('Did not detect device...')
             return jsonify({'success': False, 'error': 'No device detected...'})
         #check if the available ports have changed
         comport_list_post_plugin = list(list_ports.comports())
@@ -119,9 +116,12 @@ def read_data():
     #check if com port provided is valid
     comport_list = [c.name for c in list_ports.comports()]
     if com_port not in comport_list:
+        print("READ_DATA::ERROR::Comport not found")
         return jsonify({'success': False, 'error': 'Comport not available on this PC. Maybe re-pair...'})
     with serial.Serial(port=com_port, baudrate=9600) as ser:
         data_list = list(itertools.islice(map(lambda x: x.decode().split(), ser), 3000))
+    
+    print("Data read successfully, data_list with size of ", len(data_list))
     return jsonify({'success': True, 'data': data_list})
     
 @app.route('/data_filter', methods=['GET', 'POST'])
@@ -130,7 +130,6 @@ def data_filter():
     import scipy 
     from scipy.signal import butter
     from datetime import datetime
-    import pandas as pd
     email = request.json.get('email')
     data_list = request.json.get('data_list')
     data_list = data_list[100:2900]
@@ -172,7 +171,7 @@ def data_filter():
     emg3_mean = abs(np.mean(emg3_filt))
     
     mean_data = [emg1_mean, emg2_mean, emg3_mean]
-
+    print('user email', email)
     new_data = Data(email=email,
                     emg_1=emg1_mean,
                     emg_2=emg2_mean,
@@ -198,21 +197,23 @@ def get_data():
 
     print(f'SUCCESS:get_data: Data found for {email}')
 
-    emg1 = np.array()
-    emg2 = np.array()
-    emg3 = np.array()
-    time = []
-    for entry in found_user_data:
-        np.append(emg1, entry.emg_1)
-        np.append(emg2, entry.emg_2)
-        np.append(emg3, entry.emg_3)
-        time.append(entry.time_recorded)
+    emg1, emg2, emg3, time = [], [], [], []
+    for entry in found_user_data[len(found_user_data)-5:]:
+        emg1.append(entry.emg_1)
+        emg2.append(entry.emg_2)
+        emg3.append(entry.emg_3)
+        time.append(entry.time_recorded.strftime('%m-%d %H:%M'))
+    print(emg1, emg2, emg3, time)
+    np.array(emg1)
+    np.array(emg2)
+    np.array(emg3)
 
     plt.plot(time,emg1,label='Quadriceps')
     plt.plot(time,emg2,label='Vastus Lateralis')
     plt.plot(time,emg3,label='Soleus')
     plt.xlabel('Exercise Date')
     plt.ylabel('Muscle Activation')
-    plt.show()
+    path = r'C:\Users\Shaun\College\Spring 2023\Capstone\LAMS\src\containers\shared\results.png'
+    plt.savefig(path)
 
-    return jsonify({'success': True, 'user_data': data_list})
+    return jsonify({'success': True})
