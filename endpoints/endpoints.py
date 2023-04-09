@@ -185,10 +185,10 @@ def data_filter():
 
 @app.route('/get_data', methods=['GET', 'POST'])
 def get_data():
-    import numpy as np
     import matplotlib
     matplotlib.use('Agg')  # Set the backend to Agg
     import matplotlib.pyplot as plt
+    import math
 
     email = request.json.get('email')
     found_user_data = Data.query.filter_by(email=email).order_by(Data.time_recorded).all()
@@ -199,25 +199,29 @@ def get_data():
     print(f'SUCCESS:get_data: Data found for {email}')
 
     emg1, emg2, emg3, time = [], [], [], []
-    for entry in found_user_data[len(found_user_data)-5:]:
+    iter = math.ceil(len(found_user_data)/10)
+    for entry in found_user_data[::iter]:
         emg1.append(entry.emg_1)
         emg2.append(entry.emg_2)
         emg3.append(entry.emg_3)
-        time.append(entry.time_recorded.strftime('%m-%d %H:%M'))
-    print(emg1, emg2, emg3, time)
-    np.array(emg1)
-    np.array(emg2)
-    np.array(emg3)
+        time.append(entry.time_recorded.strftime('%m-%d'))
+    emg1.append(found_user_data[-1].emg_1)
+    emg2.append(found_user_data[-1].emg_2)
+    emg3.append(found_user_data[-1].emg_3)
+    time.append(found_user_data[-1].time_recorded.strftime('%m-%d'))
 
-    plt.plot(time,emg1,label='Quadriceps')
-    plt.plot(time,emg2,label='Vastus Lateralis')
-    plt.plot(time,emg3,label='Soleus')
-    plt.xlabel('Exercise Date')
-    plt.ylabel('Muscle Activation')
-    plt.legend()
+    fig = plt.figure()
+    fig, ax = plt.subplots()
+    ax.plot(time, emg1, label='Quadriceps')
+    ax.plot(time, emg2, label='Vastus Lateralis')
+    ax.plot(time, emg3, label='Soleus')
+    ax.set_xlabel('Exercise Date (mm-dd)')
+    ax.set_ylabel('Muscle Activation (mV)')
+    ax.set_title('Your Progess')
+    ax.legend()
 
     filename = email + ".png"
-    plt.savefig(filename)
+    fig.savefig(filename)
 
     return jsonify({'success': True})
 
