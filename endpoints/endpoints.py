@@ -233,3 +233,19 @@ def get_image(email):
     file_path = os.path.join(app.root_path, image_path)  # Relative file path based on Flask app directory
     print('getting here with file path', file_path)
     return send_file(file_path, mimetype='image/png')
+
+@app.route('/get_exercise_data', methods=['GET', 'POST'])
+def get_exercise_data():
+    email = request.json.get('email')
+    found_user_data = Data.query.filter_by(email=email).order_by(Data.time_recorded).all()
+    if not found_user_data:
+        print(f'ERROR:get_exercise_data: {email} has no data stored in database')
+        return jsonify({'success': False, 'message': "No data found for user"})
+
+    dates_recorded = []
+    for data_entry in found_user_data:
+        dates_recorded.append(data_entry.time_recorded)
+
+    print(f'SUCCESS:get_exercise_data: {email} date_records found!')
+
+    return jsonify({'success': True, 'dates_recorded': dates_recorded})
