@@ -120,9 +120,11 @@ def read_data():
         print("READ_DATA::ERROR::Comport not found")
         return jsonify({'success': False, 'error': 'Comport not available on this PC. Maybe re-pair...'})
     with serial.Serial(port=com_port, baudrate=9600) as ser:
+        ser.flush()
         data_list = list(itertools.islice(map(lambda x: x.decode().split(), ser), 3000))
     
     print("Data read successfully, data_list with size of ", len(data_list))
+    print(data_list)
     return jsonify({'success': True, 'data': data_list})
     
 @app.route('/data_filter', methods=['GET', 'POST'])
@@ -204,17 +206,13 @@ def get_data():
         emg1.append(entry.emg_1)
         emg2.append(entry.emg_2)
         emg3.append(entry.emg_3)
-        time.append(entry.time_recorded.strftime('%m-%d'))
-    emg1.append(found_user_data[-1].emg_1)
-    emg2.append(found_user_data[-1].emg_2)
-    emg3.append(found_user_data[-1].emg_3)
-    time.append(found_user_data[-1].time_recorded.strftime('%m-%d'))
+        time.append(entry.time_recorded.strftime('%m-%d %H:%M'))
 
     fig = plt.figure()
     fig, ax = plt.subplots()
     ax.plot(time, emg1, label='Quadriceps')
-    ax.plot(time, emg2, label='Vastus Lateralis')
-    ax.plot(time, emg3, label='Soleus')
+    #ax.plot(time, emg2, label='Vastus Lateralis')
+    #ax.plot(time, emg3, label='Soleus')
     ax.set_xlabel('Exercise Date (mm-dd)')
     ax.set_ylabel('Muscle Activation (mV)')
     ax.set_title('Your Progess')
